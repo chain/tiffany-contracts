@@ -19,4 +19,3 @@ deployments/localhost/**
 # flat merge files
 merge
 tmp
-003.signature.js
