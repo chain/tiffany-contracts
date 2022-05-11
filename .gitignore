@@ -1,0 +1,22 @@
+node_modules
+
+#Hardhat files
+cache
+artifacts
+coverage
+
+.env
+.env.*
+!.env.template
+
+.vscode
+
+deployments/**/solcInputs
+deployments/localhost/**
+
+.openzeppelin
+
+# flat merge files
+merge
+tmp
+003.signature.js

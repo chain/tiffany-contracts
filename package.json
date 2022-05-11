@@ -1,0 +1,51 @@
+{
+  "name": "tiffany-contracts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "hardhat compile",
+    "console": "hardhat console",
+    "merge": "sol-merger \"./contracts/**/*.sol\" ./merge",
+    "test": "hardhat test --show-stack-traces --network hardhat",
+    "test:coverage": "node --max-old-space-size=4096 ./node_modules/.bin/hardhat coverage --network hardhat",
+    "test:gas": "REPORT_GAS=true npm run test",
+    "node": "npx hardhat node",
+    "deploy": "npx hardhat deploy --network localhost --deploy-scripts ./deploy/mainnet",
+    "upgrade": "npx hardhat deploy --network localhost --deploy-scripts ./deploy/upgrades",
+    "statics": "npx hardhat deploy --network localhost --deploy-scripts ./deploy/statics",
+    "deploy:mainnet": "npx hardhat deploy --network mainnet",
+    "upgrade:mainnet": "npx hardhat deploy --network mainnet --deploy-scripts ./deploy/upgrades",
+    "statics:mainnet": "npx hardhat deploy --network mainnet --deploy-scripts ./deploy/statics",
+    "verify:mainnet": "hardhat --network mainnet etherscan-verify",
+    "deploy:rinkeby": "npx hardhat deploy --network rinkeby --deploy-scripts ./deploy/rinkeby",
+    "upgrade:rinkeby": "npx hardhat deploy --network rinkeby --deploy-scripts ./deploy/upgrades",
+    "verify:rinkeby": "hardhat --network rinkeby etherscan-verify"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.3",
+    "@nomiclabs/hardhat-etherscan": "^2.1.8",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@nomiclabs/hardhat-web3": "^2.0.0",
+    "@openzeppelin/contracts": "^4.4.0",
+    "@openzeppelin/hardhat-upgrades": "^1.12.0",
+    "@poanet/solidity-flattener": "^3.0.6",
+    "chai": "^4.3.4",
+    "dotenv": "^10.0.0",
+    "ethereum-waffle": "^3.4.0",
+    "ethers": "^5.5.2",
+    "hardhat": "^2.7.0",
+    "hardhat-abi-exporter": "^2.3.1",
+    "hardhat-deploy": "^0.8.11",
+    "hardhat-deploy-ethers": "^0.3.0-beta.11",
+    "hardhat-gas-reporter": "^1.0.6",
+    "solidity-coverage": "^0.7.17",
+    "web3": "^1.6.1"
+  },
+  "dependencies": {
+    "@remix-project/remixd": "^0.6.1",
+    "sol-merger": "^4.1.1"
+  }
+}
