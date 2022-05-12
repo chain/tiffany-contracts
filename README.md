@@ -4,7 +4,8 @@ Tiffany contracts
 
 ## Rinkeby Testnet
 
-https://rinkeby.etherscan.io/address/0x028C0e9baAbEf385971120aD3C66992a2db162FD#code
+https://rinkeby.etherscan.io/address/0xA6bD9f651316e25CCD50B76Da1359B709435c234#code
 ```
-deploying "NFTiff" (tx: 0xcdd5f8f4d72f0e3c8d74d8bf38379fb555d272d52e7160dfb2af0d0235c4125a)...: deployed at 0x028C0e9baAbEf385971120aD3C66992a2db162FD with 3473864 gas
+deploying "MockCryptoPunks" (tx: 0x61a377eb6666cbd03e11fbc60439c214c35264612dd5979053607a368731a983)...: deployed at 0x0ece5312f66002b4103FBb6A0ff4ad90aF52f91a with 148831 gas
+deploying "NFTiff" (tx: 0x09bc34cfbf78a7faddde61875f2985ecaeff2c8f9a909bb627d43389c1ec2bf4)...: deployed at 0xA6bD9f651316e25CCD50B76Da1359B709435c234 with 3791948 gas
 ```

@@ -1,0 +1,104 @@
+{
+  "address": "0x0ece5312f66002b4103FBb6A0ff4ad90aF52f91a",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "punkIndexToAddress",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tokenId_",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "owner_",
+          "type": "address"
+        }
+      ],
+      "name": "setTokenOwner",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x61a377eb6666cbd03e11fbc60439c214c35264612dd5979053607a368731a983",
+  "receipt": {
+    "to": null,
+    "from": "0xa36bC4cB270B08951469333C1dEd09e07aE0b098",
+    "contractAddress": "0x0ece5312f66002b4103FBb6A0ff4ad90aF52f91a",
+    "transactionIndex": 11,
+    "gasUsed": "148831",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x5efeb67c509b919041d6ce531a1b21fdfe08a21cf608d8b35174427e7bc19e3c",
+    "transactionHash": "0x61a377eb6666cbd03e11fbc60439c214c35264612dd5979053607a368731a983",
+    "logs": [],
+    "blockNumber": 10664408,
+    "cumulativeGasUsed": "5131365",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "solcInputHash": "68bef7087a3ad51c5de79685dae17b7b",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.7+commit.e28d00a7\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"punkIndexToAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"tokenId_\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"owner_\",\"type\":\"address\"}],\"name\":\"setTokenOwner\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/mocks/Mocks.sol\":\"MockCryptoPunks\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"details\":{\"constantOptimizer\":true,\"cse\":true,\"deduplicate\":true,\"inliner\":true,\"jumpdestRemover\":true,\"orderLiterals\":true,\"peephole\":true,\"yul\":false},\"runs\":200},\"remappings\":[]},\"sources\":{\"contracts/mocks/Mocks.sol\":{\"content\":\"// SPDX-License-Identifier: Unlicense\\n\\npragma solidity ^0.8.7;\\n\\ncontract MockCryptoPunks {\\n    mapping(uint256 => address) ownerOf;\\n\\n    function setTokenOwner(uint256 tokenId_, address owner_) external {\\n        ownerOf[tokenId_] = owner_;\\n    }\\n\\n    function punkIndexToAddress(uint256 tokenId) external view returns (address) {\\n        return ownerOf[tokenId];\\n    }\\n}\",\"keccak256\":\"0xfdc6373824b477286aba1beb77bf8b8527baa16277d54dc156c38da182d759fd\",\"license\":\"Unlicense\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b506101bb806100206000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c806323eac4bd1461003b5780635817816814610079575b600080fd5b6100776100493660046100fd565b60009182526020829052604090912080546001600160a01b0319166001600160a01b03909216919091179055565b005b6100a26100873660046100d4565b6000908152602081905260409020546001600160a01b031690565b6040516100af9190610149565b60405180910390f35b80356100c381610168565b92915050565b80356100c38161017f565b6000602082840312156100e9576100e9600080fd5b60006100f584846100c9565b949350505050565b6000806040838503121561011357610113600080fd5b600061011f85856100c9565b9250506020610130858286016100b8565b9150509250929050565b61014381610157565b82525050565b602081016100c3828461013a565b60006001600160a01b0382166100c3565b61017181610157565b811461017c57600080fd5b50565b8061017156fea26469706673582212203370f71fe488269f491d491a1f434514b886e193dcb805968c7dc5e60a028b2564736f6c63430008070033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100365760003560e01c806323eac4bd1461003b5780635817816814610079575b600080fd5b6100776100493660046100fd565b60009182526020829052604090912080546001600160a01b0319166001600160a01b03909216919091179055565b005b6100a26100873660046100d4565b6000908152602081905260409020546001600160a01b031690565b6040516100af9190610149565b60405180910390f35b80356100c381610168565b92915050565b80356100c38161017f565b6000602082840312156100e9576100e9600080fd5b60006100f584846100c9565b949350505050565b6000806040838503121561011357610113600080fd5b600061011f85856100c9565b9250506020610130858286016100b8565b9150509250929050565b61014381610157565b82525050565b602081016100c3828461013a565b60006001600160a01b0382166100c3565b61017181610157565b811461017c57600080fd5b50565b8061017156fea26469706673582212203370f71fe488269f491d491a1f434514b886e193dcb805968c7dc5e60a028b2564736f6c63430008070033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 5,
+        "contract": "contracts/mocks/Mocks.sol:MockCryptoPunks",
+        "label": "ownerOf",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_mapping(t_uint256,t_address)"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_mapping(t_uint256,t_address)": {
+        "encoding": "mapping",
+        "key": "t_uint256",
+        "label": "mapping(uint256 => address)",
+        "numberOfBytes": "32",
+        "value": "t_address"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}
