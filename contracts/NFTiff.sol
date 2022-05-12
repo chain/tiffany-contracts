@@ -13,6 +13,10 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 // import "hardhat/console.sol";
 
+interface ICryptoPunks {
+    function punkIndexToAddress(uint256) external view returns (address);
+}
+
 contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     using Strings for uint256;
     using ECDSA for bytes32;
@@ -30,10 +34,28 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     address public signer; // signer to make signature
     mapping(address => bool) whitelistedAddresses;
     mapping(address => bool) blacklistedAddresses;
+    address public immutable punksContract; // mainnet punks - 0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB
 
-    constructor(string memory _initNotRevealedUri) ERC721("NFTiff", "NFTiff") {
+    /**
+     * claim info: punk_id => nftiff_id => ClaimInfo
+     */
+    mapping(uint256 => mapping(uint256 => ClaimInfo)) claimInfo;
+
+    /** DATA STRUCTURE */
+    struct ClaimInfo {
+        uint256 timestamp;        
+        address claimer;
+    }
+
+    /** EVENTS */
+    event NFTiffMinted(address indexed to, uint256 indexed tokenId);
+    event Claimed(address indexed to, uint256 punkId, uint256 nftiffId);
+
+    /** METHODS */
+    constructor(string memory _initNotRevealedUri, address punksContract_) ERC721("NFTiff", "NFTiff") {
         setNotRevealedURI(_initNotRevealedUri);
         signer = msg.sender;
+        punksContract = punksContract_;
     }
     
     //MODIFIERS
@@ -56,7 +78,7 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
         require(isWhitelisted(msg.sender), "user is not whitelisted");
 
         if(isKycRequired) {
-            bytes32 hash = keccak256(abi.encodePacked("kyc approved", msg.sender));
+            bytes32 hash = keccak256(abi.encodePacked("kyc-approved", msg.sender));
             address signer_ = hash.toEthSignedMessageHash().recover(_signature);
             require(signer_ == signer, "Kyc not approved");
         }
@@ -75,6 +97,7 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
 
         for (uint256 i = 1; i <= _mintAmount; i++) {
             _safeMint(msg.sender, supply + i);
+            emit NFTiffMinted(msg.sender, supply + i);
         }
     }
     
@@ -85,6 +108,7 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
 
         for (uint256 i = 1; i <= _mintAmount; i++) {
             _safeMint(destination, supply + i);
+            emit NFTiffMinted(destination, supply + i);
         }
     }
 
@@ -99,7 +123,22 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
 
         for (uint256 i = 1; i <= _mintAmount; i++) {
             _safeMint(msg.sender, supply + i);
+            emit NFTiffMinted(msg.sender, supply + i);
         }
+    }
+
+    //CLAIM
+    function claim(uint256 punk_, uint256 nftiff_, bytes memory _signature) public payable notPaused nonReentrant notBlacklisted(msg.sender) {
+        require(claimInfo[punk_][nftiff_].timestamp == 0, "already claimed");
+        require(ownerOf(nftiff_) == msg.sender, "not nftiff owner");
+        require(ICryptoPunks(punksContract).punkIndexToAddress(punk_) == msg.sender, "not punks owner");
+
+        bytes32 hash = keccak256(abi.encodePacked("shipping-verified", punk_, nftiff_, msg.sender));
+        address signer_ = hash.toEthSignedMessageHash().recover(_signature);
+        require(signer_ == signer, "Shipping not verified");
+
+        claimInfo[punk_][nftiff_] = ClaimInfo({timestamp: block.timestamp, claimer: msg.sender});
+        emit Claimed(msg.sender, punk_, nftiff_);
     }
 
     //PUBLIC VIEWS

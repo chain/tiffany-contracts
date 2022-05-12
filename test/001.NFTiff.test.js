@@ -22,7 +22,14 @@ const baseUri = "https://ipfs.io/base/";
 // }
 
 async function getKycSignature(userAddress) {
-  const message = web3.utils.soliditySha3("kyc approved", userAddress);
+  const message = web3.utils.soliditySha3("kyc-approved", userAddress);
+  const signatureObject = await web3.eth.accounts.sign(message, signerKey);
+  // console.log('--- signature:', userAddress, signerAddress, signatureObject.signature);
+  return signatureObject.signature;
+}
+
+async function getClaimSignature(punkId, nftiffId, userAddress) {
+  const message = web3.utils.soliditySha3("kyc-approved", punkId, nftiffId, userAddress);
   const signatureObject = await web3.eth.accounts.sign(message, signerKey);
   // console.log('--- signature:', userAddress, signerAddress, signatureObject.signature);
   return signatureObject.signature;
@@ -50,9 +57,13 @@ describe("NFTiff Test", function () {
 
   it("Contract Deploy", async function () {
 
+    // Deploy mock cryptopunks
+    const MockCryptoPunksFactory = await ethers.getContractFactory("MockCryptoPunks");
+    info.cryptopunks = await MockCryptoPunksFactory.deploy();
+
     // NFTiff factory
     const NFTiffFactory = await ethers.getContractFactory("NFTiff");
-    info.nftiff = await NFTiffFactory.deploy(notRevealedUri);
+    info.nftiff = await NFTiffFactory.deploy(notRevealedUri, info.cryptopunks.address);
   });
 
   it("Check configs", async function () {
@@ -64,7 +75,7 @@ describe("NFTiff Test", function () {
     expect(await info.nftiff.presaleActive()).to.equal(false);
   });
 
-  it("Sale test", async function () {
+  it("Mint test", async function () {
 
     // generate kyc signature
     const signature = await getKycSignature(info.member1);
@@ -153,5 +164,73 @@ describe("NFTiff Test", function () {
         .connect(info.member1Signer)
         .mintPublic(2, { value: info.mintFee(2) })
       ).to.be.reverted;
+  });
+
+
+  it("Claim test", async function () {
+
+    /**
+     * nftiff holders
+     *    user1: [1,2,3,4]
+     *    user2: [5,6]
+     * 
+     * blacklisted: user1
+     * 
+     * punks holders
+     *    user1: 1
+     *    user2: 2
+     */
+
+    // set mock punks holders
+    await info.cryptopunks.connect(info.deployerSigner).setTokenOwner(1, info.member1);
+    await info.cryptopunks.connect(info.deployerSigner).setTokenOwner(2, info.member2);
+
+    // fail: wrong nftiff holder
+    let signature = await getClaimSignature(2, 1, info.member2);
+    await expect(
+      info.nftiff
+      .connect(info.member2Signer)
+      .claim(2, 1, signature)
+    ).to.be.reverted;
+
+    // fail: wrong punks holder
+    signature = await getClaimSignature(1, 5, info.member2);
+    await expect(
+      info.nftiff
+      .connect(info.member2Signer)
+      .claim(1, 5, signature)
+    ).to.be.reverted;
+
+    // fail: blacklisted user
+    signature = await getClaimSignature(1, 1, info.member1);
+    await expect(
+      info.nftiff
+      .connect(info.member1Signer)
+      .claim(1, 1, signature)
+    ).to.be.reverted;
+
+    // failure: invalid signature
+    signature = await getClaimSignature(1, 5, info.member2);
+    await expect(
+      info.nftiff
+      .connect(info.member2Signer)
+      .claim(2, 5, signature)
+    );
+
+    // success
+    signature = await getClaimSignature(2, 5, info.member2);
+    await expect(
+      info.nftiff
+      .connect(info.member2Signer)
+      .claim(2, 5, signature)
+    );
+
+    // can't claim again
+    signature = await getClaimSignature(2, 5, info.member2);
+    await expect(
+      info.nftiff
+      .connect(info.member2Signer)
+      .claim(2, 5, signature)
+    ).to.be.reverted;
   });
 });

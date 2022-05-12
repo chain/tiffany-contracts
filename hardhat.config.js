@@ -91,7 +91,7 @@ module.exports = {
     rinkeby: {
       url: "https://eth-rinkeby.alchemyapi.io/v2/" + ALCHEMY_API_KEY,
       accounts: [`${PRIVATE_KEY}`],
-      gasMultiplier: 1.2,
+      gasMultiplier: 1.5,
       deploy: ["deploy/rinkeby"],
     }
   },
