@@ -39,7 +39,7 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     /**
      * claim info: punk_id => nftiff_id => ClaimInfo
      */
-    mapping(uint256 => mapping(uint256 => ClaimInfo)) claimInfo;
+    mapping(uint256 => mapping(uint256 => ClaimInfo)) public claimInfo;
 
     /** DATA STRUCTURE */
     struct ClaimInfo {
