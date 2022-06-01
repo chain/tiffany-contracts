@@ -29,7 +29,7 @@ async function getKycSignature(userAddress) {
 }
 
 async function getClaimSignature(punkId, nftiffId, userAddress) {
-  const message = web3.utils.soliditySha3("kyc-approved", punkId, nftiffId, userAddress);
+  const message = web3.utils.soliditySha3("shipping-verified", punkId, nftiffId, userAddress);
   const signatureObject = await web3.eth.accounts.sign(message, signerKey);
   // console.log('--- signature:', userAddress, signerAddress, signatureObject.signature);
   return signatureObject.signature;
@@ -134,8 +134,13 @@ describe("NFTiff Test", function () {
     // token uri
     expect(await info.nftiff.tokenURI(1)).to.equal(notRevealedUri);
     await info.nftiff.connect(info.deployerSigner).reveal();
-    await info.nftiff.connect(info.deployerSigner).setBaseURI(baseUri);
+    expect(await info.nftiff.tokenURI(1)).to.equal("");
+    await info.nftiff.connect(info.deployerSigner).setTokenURI(1, `${baseUri}1.json`);
     expect(await info.nftiff.tokenURI(1)).to.equal(`${baseUri}1.json`);
+    await expect(
+      info.nftiff.connect(info.deployerSigner).setTokenURI(1, `${baseUri}1-new.json`)
+    ).to.be.emit(info.nftiff, "TokenURIUpdated");
+    expect(await info.nftiff.tokenURI(1)).to.equal(`${baseUri}1-new.json`);
 
     // gift mint success
     await expect(
@@ -178,12 +183,13 @@ describe("NFTiff Test", function () {
      * 
      * punks holders
      *    user1: 1
-     *    user2: 2
+     *    user2: 2, 3
      */
 
     // set mock punks holders
     await info.cryptopunks.connect(info.deployerSigner).setTokenOwner(1, info.member1);
     await info.cryptopunks.connect(info.deployerSigner).setTokenOwner(2, info.member2);
+    await info.cryptopunks.connect(info.deployerSigner).setTokenOwner(3, info.member2);
 
     // fail: wrong nftiff holder
     let signature = await getClaimSignature(2, 1, info.member2);
@@ -215,22 +221,41 @@ describe("NFTiff Test", function () {
       info.nftiff
       .connect(info.member2Signer)
       .claim(2, 5, signature)
-    );
+    ).to.be.reverted;
 
     // success
+    expect(await info.nftiff.punkClaimed(2)).to.equal(false);
+    expect(await info.nftiff.nftiffClaimed(5)).to.equal(false);
+    expect(await info.nftiff.totalClaimed()).to.equal(0);
     signature = await getClaimSignature(2, 5, info.member2);
     await expect(
       info.nftiff
       .connect(info.member2Signer)
       .claim(2, 5, signature)
-    );
+    ).to.be.emit(info.nftiff, "Claimed");
+    expect(await info.nftiff.punkClaimed(2)).to.equal(true);
+    expect(await info.nftiff.nftiffClaimed(5)).to.equal(true);
+    expect(await info.nftiff.totalClaimed()).to.equal(1);
 
-    // can't claim again
-    signature = await getClaimSignature(2, 5, info.member2);
+    let claimInfo = await info.nftiff.claimInfo(1);
+    expect(claimInfo.punkId).to.equal(2);
+    expect(claimInfo.nftiffId).to.equal(5);
+    expect(claimInfo.claimer).to.equal(info.member2);
+
+    // can't claim with used-punk
+    signature = await getClaimSignature(2, 6, info.member2);
     await expect(
       info.nftiff
       .connect(info.member2Signer)
-      .claim(2, 5, signature)
+      .claim(2, 6, signature)
+    ).to.be.reverted;
+
+    // can't claim with used-nftiff
+    signature = await getClaimSignature(3, 5, info.member2);
+    await expect(
+      info.nftiff
+      .connect(info.member2Signer)
+      .claim(3, 5, signature)
     ).to.be.reverted;
   });
 });

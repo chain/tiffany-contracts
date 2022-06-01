@@ -20,9 +20,10 @@ interface ICryptoPunks {
 contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     using Strings for uint256;
     using ECDSA for bytes32;
-    string private baseURI;
-    string public baseExtension = ".json";
+
     string public notRevealedUri;
+    mapping(uint256 => string) _tokenURIs;
+
     uint256 public cost = 30 ether;
     uint256 public maxSupply = 500;
     uint256 public maxMintAmount = 2;
@@ -36,20 +37,23 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     mapping(address => bool) blacklistedAddresses;
     address public immutable punksContract; // mainnet punks - 0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB
 
-    /**
-     * claim info: punk_id => nftiff_id => ClaimInfo
-     */
-    mapping(uint256 => mapping(uint256 => ClaimInfo)) public claimInfo;
+    uint256 public totalClaimed;
+    mapping(uint256 => ClaimInfo) public claimInfo; // claimId => ClaimInfo
+    mapping(uint256 => bool) public nftiffClaimed;
+    mapping(uint256 => bool) public punkClaimed;
 
     /** DATA STRUCTURE */
     struct ClaimInfo {
+        uint256 punkId;
+        uint256 nftiffId;
         uint256 timestamp;        
         address claimer;
     }
 
     /** EVENTS */
+    event TokenURIUpdated(uint256 indexed tokenId, string uri);
     event NFTiffMinted(address indexed to, uint256 indexed tokenId);
-    event Claimed(address indexed to, uint256 punkId, uint256 nftiffId);
+    event Claimed(uint256 claimId, address indexed to, uint256 punkId, uint256 nftiffId, uint256 timestamp);
 
     /** METHODS */
     constructor(string memory _initNotRevealedUri, address punksContract_) ERC721("NFTiff", "NFTiff") {
@@ -70,9 +74,6 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     }
 
     // INTERNAL
-    function _baseURI() internal view virtual override returns (string memory) {
-        return baseURI;
-    }
 
     function presaleValidations(bytes memory _signature) internal view {
         require(isWhitelisted(msg.sender), "user is not whitelisted");
@@ -129,7 +130,8 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
 
     //CLAIM
     function claim(uint256 punk_, uint256 nftiff_, bytes memory _signature) public payable notPaused nonReentrant notBlacklisted(msg.sender) {
-        require(claimInfo[punk_][nftiff_].timestamp == 0, "already claimed");
+        require(nftiffClaimed[nftiff_] == false, "already claimed nftiff");
+        require(punkClaimed[punk_] == false, "already claimed punk");
         require(ownerOf(nftiff_) == msg.sender, "not nftiff owner");
         require(ICryptoPunks(punksContract).punkIndexToAddress(punk_) == msg.sender, "not punks owner");
 
@@ -137,8 +139,17 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
         address signer_ = hash.toEthSignedMessageHash().recover(_signature);
         require(signer_ == signer, "Shipping not verified");
 
-        claimInfo[punk_][nftiff_] = ClaimInfo({timestamp: block.timestamp, claimer: msg.sender});
-        emit Claimed(msg.sender, punk_, nftiff_);
+        nftiffClaimed[nftiff_] = true;
+        punkClaimed[punk_] = true;
+
+        totalClaimed++;
+        claimInfo[totalClaimed] = ClaimInfo({
+            punkId: punk_,
+            nftiffId: nftiff_,
+            timestamp: block.timestamp,
+            claimer: msg.sender
+        });
+        emit Claimed(totalClaimed, msg.sender, punk_, nftiff_, block.timestamp);
     }
 
     //PUBLIC VIEWS
@@ -165,15 +176,13 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
         if (!revealed) {
             return notRevealedUri;
         } else {
-            string memory currentBaseURI = _baseURI();
-            return bytes(currentBaseURI).length > 0 ? string(abi.encodePacked(currentBaseURI,tokenId.toString(), baseExtension)) : "";
+            return _tokenURIs[tokenId];
+            // string memory currentBaseURI = _baseURI();
+            // return bytes(currentBaseURI).length > 0 ? string(abi.encodePacked(currentBaseURI,tokenId.toString(), baseExtension)) : "";
         }
     }
 
     //ONLY OWNER VIEWS
-    function getBaseURI() public view onlyOwner returns (string memory) {
-        return baseURI;
-    }
 
     function getContractBalance() public view onlyOwner returns (uint256) {
         return address(this).balance;
@@ -200,12 +209,9 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
         maxMintAmount = _newmaxMintAmount;
     }
 
-    function setBaseURI(string memory _newBaseURI) public onlyOwner {
-        baseURI = _newBaseURI;
-    }
-
-    function setBaseExtension(string memory _newBaseExtension) public onlyOwner {
-        baseExtension = _newBaseExtension;
+    function setTokenURI(uint256 tokenId, string memory _uri) public onlyOwner {
+        _tokenURIs[tokenId] = _uri;
+        emit TokenURIUpdated(tokenId, _uri);
     }
 
     function setNotRevealedURI(string memory _notRevealedURI) public onlyOwner {
