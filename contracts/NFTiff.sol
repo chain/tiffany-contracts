@@ -11,7 +11,6 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-// import "hardhat/console.sol";
 
 interface ICryptoPunks {
     function punkIndexToAddress(uint256) external view returns (address);
@@ -177,8 +176,6 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
             return notRevealedUri;
         } else {
             return _tokenURIs[tokenId];
-            // string memory currentBaseURI = _baseURI();
-            // return bytes(currentBaseURI).length > 0 ? string(abi.encodePacked(currentBaseURI,tokenId.toString(), baseExtension)) : "";
         }
     }
 

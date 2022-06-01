@@ -2,7 +2,6 @@ require("dotenv").config();
 const { expect } = require("chai");
 const { BigNumber } = require("ethers");
 const { ethers, getNamedAccounts, web3 } = require("hardhat");
-const { getBlockTimestamp, advanceTimeAndBlock }= require('./helpers/helpers');
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const signerKey = process.env.PRIVATE_KEY;
@@ -10,28 +9,15 @@ const signerAddress = web3.eth.accounts.privateKeyToAccount(signerKey).address;
 const notRevealedUri = "https://ipfs.io/ipfs/notrevealed.png";
 const baseUri = "https://ipfs.io/base/";
 
-// function fromWei(number, decimals = 18) {
-//   return web3.utils.fromWei(
-//     number.toString() + new Array(18 - decimals).fill(0).join("")
-//   );
-// }
-
-// function decodeBase64toJson(encBody) {
-//   const decodedRequestBodyString = Buffer.from(encBody, "base64");
-//   return JSON.parse(decodedRequestBodyString.toString());
-// }
-
 async function getKycSignature(userAddress) {
   const message = web3.utils.soliditySha3("kyc-approved", userAddress);
   const signatureObject = await web3.eth.accounts.sign(message, signerKey);
-  // console.log('--- signature:', userAddress, signerAddress, signatureObject.signature);
   return signatureObject.signature;
 }
 
 async function getClaimSignature(punkId, nftiffId, userAddress) {
   const message = web3.utils.soliditySha3("shipping-verified", punkId, nftiffId, userAddress);
   const signatureObject = await web3.eth.accounts.sign(message, signerKey);
-  // console.log('--- signature:', userAddress, signerAddress, signatureObject.signature);
   return signatureObject.signature;
 }
 
