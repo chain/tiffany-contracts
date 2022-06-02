@@ -32,8 +32,9 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     bool public revealed = false;
     bool public isKycRequired = true;
     address public signer; // signer to make signature
-    mapping(address => uint256) public whitelists; // address => amount
-    mapping(address => bool) public blacklistedAddresses;
+    mapping(address => uint256) public whitelistMinted; // address => amount
+    mapping(address => bool) whitelistedAddresses;
+    mapping(address => bool) blacklistedAddresses;
     address public immutable punksContract; // mainnet punks - 0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB
 
     uint256 public totalClaimed;
@@ -75,6 +76,8 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     // INTERNAL
 
     function presaleValidations(bytes memory _signature) internal view {
+        require(whitelistedAddresses[msg.sender] == true, "address not whitelisted");
+
         if(isKycRequired) {
             bytes32 hash = keccak256(abi.encodePacked("kyc-approved", msg.sender));
             address signer_ = hash.toEthSignedMessageHash().recover(_signature);
@@ -87,14 +90,13 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
         require(presaleActive, "Sale has not started yet");
         require(msg.value >= cost * _mintAmount, "insufficient funds");
         require(_mintAmount > 0, "need to mint at least 1 NFT");
-        require(_mintAmount <= whitelists[msg.sender], "whitelist amount failed");
-        // require(_mintAmount <= maxMintAmount,"max mint amount per transaction exceeded");
+        require(_mintAmount + whitelistMinted[msg.sender] <= maxMintAmount, "max mint amount exceeded");
         uint256 supply = totalSupply();
         require(supply + _mintAmount <= maxSupply, "max NFT limit exceeded");
 
         presaleValidations(_signature);
 
-        whitelists[msg.sender] -= _mintAmount;
+        whitelistMinted[msg.sender] += _mintAmount;
         for (uint256 i = 1; i <= _mintAmount; i++) {
             _safeMint(msg.sender, supply + i);
             emit NFTiffMinted(msg.sender, supply + i);
@@ -152,8 +154,8 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     }
 
     //PUBLIC VIEWS
-    function getWhitelist(address _user) public view returns (uint256) {
-        return whitelists[_user];
+    function isWhitelisted(address _user) public view returns (bool) {
+        return whitelistedAddresses[_user];
     }
 
     function isBlacklisted(address _user) public view returns (bool) {
@@ -237,7 +239,7 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
 
     function whitelistUsers(address[] memory addresses) public onlyOwner {
         for (uint256 i = 0; i < addresses.length; i++) {
-            whitelists[addresses[i]] = 2;
+            whitelistedAddresses[addresses[i]] = true;
         }
     }
 

@@ -78,7 +78,7 @@ describe("NFTiff Test", function () {
     expect(await info.nftiff.presaleActive()).to.equal(true);
 
     // not added to whitelist
-    expect(await info.nftiff.whitelists(info.member1)).to.equal(0);
+    expect(await info.nftiff.isWhitelisted(info.member1)).to.equal(false);
     await expect(
         info.nftiff
         .connect(info.member1Signer)
@@ -86,7 +86,7 @@ describe("NFTiff Test", function () {
       ).to.be.reverted;
   
     await info.nftiff.connect(info.deployerSigner).whitelistUsers([info.member1, info.member2]);
-    expect(await info.nftiff.whitelists(info.member1)).to.equal(2);
+    expect(await info.nftiff.isWhitelisted(info.member1)).to.equal(true);
 
     // invalid kyc signature
     await expect(
@@ -101,7 +101,7 @@ describe("NFTiff Test", function () {
         .connect(info.member1Signer)
         .mint1(2, signature, { value: info.mintFee(2) })
       ).to.be.emit(info.nftiff, "Transfer");
-    expect(await info.nftiff.whitelists(info.member1)).to.equal(0);
+    expect(await info.nftiff.whitelistMinted(info.member1)).to.equal(2);
 
     // user1 should have 2 tokens (id: [1,2])
     expect(await info.nftiff.balanceOf(info.member1)).to.equal(2);
