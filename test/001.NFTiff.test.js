@@ -78,7 +78,7 @@ describe("NFTiff Test", function () {
     expect(await info.nftiff.presaleActive()).to.equal(true);
 
     // not added to whitelist
-    expect(await info.nftiff.isWhitelisted(info.member1)).to.equal(false);
+    expect(await info.nftiff.whitelists(info.member1)).to.equal(0);
     await expect(
         info.nftiff
         .connect(info.member1Signer)
@@ -86,7 +86,7 @@ describe("NFTiff Test", function () {
       ).to.be.reverted;
   
     await info.nftiff.connect(info.deployerSigner).whitelistUsers([info.member1, info.member2]);
-    expect(await info.nftiff.isWhitelisted(info.member1)).to.equal(true);
+    expect(await info.nftiff.whitelists(info.member1)).to.equal(2);
 
     // invalid kyc signature
     await expect(
@@ -101,6 +101,7 @@ describe("NFTiff Test", function () {
         .connect(info.member1Signer)
         .mint1(2, signature, { value: info.mintFee(2) })
       ).to.be.emit(info.nftiff, "Transfer");
+    expect(await info.nftiff.whitelists(info.member1)).to.equal(0);
 
     // user1 should have 2 tokens (id: [1,2])
     expect(await info.nftiff.balanceOf(info.member1)).to.equal(2);
@@ -210,8 +211,8 @@ describe("NFTiff Test", function () {
     ).to.be.reverted;
 
     // success
-    expect(await info.nftiff.punkClaimed(2)).to.equal(false);
-    expect(await info.nftiff.nftiffClaimed(5)).to.equal(false);
+    expect(await info.nftiff.punkClaims(2)).to.equal(0);
+    expect(await info.nftiff.nftiffClaims(5)).to.equal(0);
     expect(await info.nftiff.totalClaimed()).to.equal(0);
     signature = await getClaimSignature(2, 5, info.member2);
     await expect(
@@ -219,8 +220,8 @@ describe("NFTiff Test", function () {
       .connect(info.member2Signer)
       .claim(2, 5, signature)
     ).to.be.emit(info.nftiff, "Claimed");
-    expect(await info.nftiff.punkClaimed(2)).to.equal(true);
-    expect(await info.nftiff.nftiffClaimed(5)).to.equal(true);
+    expect(await info.nftiff.punkClaims(2)).to.gt(0);
+    expect(await info.nftiff.nftiffClaims(5)).to.gt(0);
     expect(await info.nftiff.totalClaimed()).to.equal(1);
 
     let claimInfo = await info.nftiff.claimInfo(1);

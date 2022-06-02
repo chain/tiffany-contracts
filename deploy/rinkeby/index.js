@@ -1,7 +1,7 @@
 const { web3 } = require("hardhat");
 
 const deployed = {
-  nftiff: "0xE183f4567902b983FeFA8B8787C2711dF9bC37f0",
+  nftiff: "",
   cryptopunks: "0x0ece5312f66002b4103FBb6A0ff4ad90aF52f91a",
 };
 
