@@ -21,7 +21,7 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     using ECDSA for bytes32;
 
     string public notRevealedUri;
-    mapping(uint256 => string) _tokenURIs;
+    mapping(uint256 => string) private _tokenURIs;
 
     uint256 public cost = 30 ether;
     uint256 public maxSupply = 500;
@@ -31,7 +31,7 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     bool public paused = false;
     bool public revealed = false;
     bool public isKycRequired = true;
-    address public signer; // signer to make signature
+    address private signer; // signer to make signature
     mapping(address => uint256) public whitelistMinted; // address => amount
     mapping(address => bool) whitelistedAddresses;
     mapping(address => bool) blacklistedAddresses;
@@ -54,6 +54,18 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     event TokenURIUpdated(uint256 indexed tokenId, string uri);
     event NFTiffMinted(address indexed to, uint256 indexed tokenId);
     event Claimed(uint256 claimId, address indexed to, uint256 punkId, uint256 nftiffId, uint256 timestamp);
+    event UsersBlacklisted(address[] users);
+    event UsersWhitelisted(address[] users);
+    event SignerChanged(address signer);
+    event KycRequireChanged(bool kycRequired);
+    event PublicSaleStatusChanged(bool isActive);
+    event PresaleStatusChanged(bool isActive);
+    event MaxSupplyChanged(uint256 maxSupply);
+    event NotRevealedUriChanged(string uri);
+    event MaxMintAmountChanged(uint256 amount);
+    event CostChanged(uint256 cost);
+    event Paused(bool isPaused);
+    event Revealed();
 
     /** METHODS */
     constructor(string memory _initNotRevealedUri, address punksContract_) ERC721("NFTiff", "NFTiff") {
@@ -64,19 +76,19 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     
     //MODIFIERS
     modifier notPaused {
-         require(!paused, "the contract is paused");
+         require(!paused, "Contract paused");
          _;
     }
 
     modifier notBlacklisted(address user_) {
-         require(!blacklistedAddresses[user_], "user in blacklist");
+         require(!blacklistedAddresses[user_], "Blacklisted user");
          _;
     }
 
     // INTERNAL
 
     function presaleValidations(bytes memory _signature) internal view {
-        require(whitelistedAddresses[msg.sender] == true, "address not whitelisted");
+        require(whitelistedAddresses[msg.sender] == true, "Not whitelisted user");
 
         if(isKycRequired) {
             bytes32 hash = keccak256(abi.encodePacked("kyc-approved", msg.sender));
@@ -88,11 +100,11 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     //MINT
     function mint1(uint256 _mintAmount, bytes memory _signature) public payable notPaused nonReentrant notBlacklisted(msg.sender) {
         require(presaleActive, "Sale has not started yet");
-        require(msg.value >= cost * _mintAmount, "insufficient funds");
-        require(_mintAmount > 0, "need to mint at least 1 NFT");
-        require(_mintAmount + whitelistMinted[msg.sender] <= maxMintAmount, "max mint amount exceeded");
+        require(msg.value >= cost * _mintAmount, "Insufficient funds");
+        require(_mintAmount > 0, "Need to mint at least 1 NFT");
+        require(_mintAmount + whitelistMinted[msg.sender] <= maxMintAmount, "Max mint amount exceeded");
         uint256 supply = totalSupply();
-        require(supply + _mintAmount <= maxSupply, "max NFT limit exceeded");
+        require(supply + _mintAmount <= maxSupply, "Max NFT limit exceeded");
 
         presaleValidations(_signature);
 
@@ -104,9 +116,9 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     }
     
     function gift(uint256 _mintAmount, address destination) public onlyOwner {
-        require(_mintAmount > 0, "need to mint at least 1 NFT");
+        require(_mintAmount > 0, "Need to mint at least 1 NFT");
         uint256 supply = totalSupply();
-        require(supply + _mintAmount <= maxSupply, "max NFT limit exceeded");
+        require(supply + _mintAmount <= maxSupply, "Max NFT limit exceeded");
 
         for (uint256 i = 1; i <= _mintAmount; i++) {
             _safeMint(destination, supply + i);
@@ -117,11 +129,11 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     //MINT Public
     function mintPublic(uint256 _mintAmount) public payable notPaused nonReentrant notBlacklisted(msg.sender) {
         require(publicSaleActive, "Sale has not started yet");
-        require(msg.value >= cost * _mintAmount, "insufficient funds");
-        require(_mintAmount > 0, "need to mint at least 1 NFT");
-        require(_mintAmount <= maxMintAmount,"max mint amount per transaction exceeded");
+        require(msg.value >= cost * _mintAmount, "Insufficient funds");
+        require(_mintAmount > 0, "Need to mint at least 1 NFT");
+        require(_mintAmount <= maxMintAmount,"Max mint amount per transaction exceeded");
         uint256 supply = totalSupply();
-        require(supply + _mintAmount <= maxSupply, "max NFT limit exceeded");
+        require(supply + _mintAmount <= maxSupply, "Max NFT limit exceeded");
 
         for (uint256 i = 1; i <= _mintAmount; i++) {
             _safeMint(msg.sender, supply + i);
@@ -131,10 +143,10 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
 
     //CLAIM
     function claim(uint256 punk_, uint256 nftiff_, bytes memory _signature) public payable notPaused nonReentrant notBlacklisted(msg.sender) {
-        require(nftiffClaims[nftiff_] == 0, "already claimed nftiff");
-        require(punkClaims[punk_] == 0, "already claimed punk");
-        require(ownerOf(nftiff_) == msg.sender, "not nftiff owner");
-        require(ICryptoPunks(punksContract).punkIndexToAddress(punk_) == msg.sender, "not punks owner");
+        require(nftiffClaims[nftiff_] == 0, "Already claimed nftiff");
+        require(punkClaims[punk_] == 0, "Already claimed punk");
+        require(ownerOf(nftiff_) == msg.sender, "Not nftiff owner");
+        require(ICryptoPunks(punksContract).punkIndexToAddress(punk_) == msg.sender, "Not punks owner");
 
         bytes32 hash = keccak256(abi.encodePacked("shipping-verified", punk_, nftiff_, msg.sender));
         address signer_ = hash.toEthSignedMessageHash().recover(_signature);
@@ -154,6 +166,11 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     }
 
     //PUBLIC VIEWS
+
+    function getSigner() public view returns (address) {
+        return signer;
+    }
+
     function isWhitelisted(address _user) public view returns (bool) {
         return whitelistedAddresses[_user];
     }
@@ -171,86 +188,118 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
         return tokenIds;
     }
 
+    /**
+     * @dev See {IERC721Metadata-tokenURI}.
+     */
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+        require(_exists(tokenId), "URI query for nonexistent token");
 
+        string memory _tokenURI; 
         if (!revealed) {
-            return notRevealedUri;
+            _tokenURI = notRevealedUri;
         } else {
-            return _tokenURIs[tokenId];
+            _tokenURI = _tokenURIs[tokenId];
         }
-    }
 
-    //ONLY OWNER VIEWS
+        string memory base = _baseURI();
 
-    function getContractBalance() public view onlyOwner returns (uint256) {
-        return address(this).balance;
-    }
+        // If there is no base URI, return the token URI.
+        if (bytes(base).length == 0) {
+            return _tokenURI;
+        }
+        // If both are set, concatenate the baseURI and tokenURI (via abi.encodePacked).
+        if (bytes(_tokenURI).length > 0) {
+            return string(abi.encodePacked(base, _tokenURI));
+        }
 
-    function getSigner() public view onlyOwner returns (address) {
-        return signer;
+        return super.tokenURI(tokenId);
     }
 
     //ONLY OWNER SETTERS
+    function setBaseURI(string calldata baseURI) external onlyOwner {
+        _baseTokenURI = baseURI;
+    }
+
+    function setTokenURI(uint256 tokenId, string memory _tokenURI) public onlyOwner {
+        require(_exists(tokenId), "URI set of nonexistent token");
+        _tokenURIs[tokenId] = _tokenURI;
+        emit TokenURIUpdated(tokenId, _tokenURI);
+    }
+
     function reveal() public onlyOwner {
         revealed = true;
+        emit Revealed();
     }
 
     function pause(bool _state) public onlyOwner {
         paused = _state;
+        emit Paused(_state);
     }
 
     function setCost(uint256 _newCost) public onlyOwner {
         cost = _newCost;
+        emit CostChanged(_newCost);
     }
 
     function setmaxMintAmount(uint256 _newmaxMintAmount) public onlyOwner {
         maxMintAmount = _newmaxMintAmount;
-    }
-
-    function setTokenURI(uint256 tokenId, string memory _uri) public onlyOwner {
-        _tokenURIs[tokenId] = _uri;
-        emit TokenURIUpdated(tokenId, _uri);
+        emit MaxMintAmountChanged(_newmaxMintAmount);
     }
 
     function setNotRevealedURI(string memory _notRevealedURI) public onlyOwner {
         notRevealedUri = _notRevealedURI;
+        emit NotRevealedUriChanged(_notRevealedURI);
     }
 
     function setMaxSupply(uint256 _maxSupply) public onlyOwner {
         maxSupply = _maxSupply;
+        emit MaxSupplyChanged(_maxSupply);
     }
 
     function setPresaleStatus(bool _saleActive) public onlyOwner {
         presaleActive = _saleActive;
+        emit PresaleStatusChanged(_saleActive);
     }
 
     function setPublicSaleStatus(bool _saleActive) public onlyOwner {
         publicSaleActive = _saleActive;
+        emit PublicSaleStatusChanged(_saleActive);
     }
 
     function setKycRequired(bool _required) public onlyOwner {
         isKycRequired = _required;
+        emit KycRequireChanged(_required);
     }
 
     function setSigner(address signer_) public onlyOwner {
         signer = signer_;
+        emit SignerChanged(signer_);
     }
 
     function whitelistUsers(address[] memory addresses) public onlyOwner {
         for (uint256 i = 0; i < addresses.length; i++) {
             whitelistedAddresses[addresses[i]] = true;
         }
+        emit UsersWhitelisted(addresses);
     }
 
     function blacklistUsers(address[] memory addresses) public onlyOwner {
         for (uint256 i = 0; i < addresses.length; i++) {
             blacklistedAddresses[addresses[i]] = true;
         }
+        emit UsersBlacklisted(addresses);
     }
 
     function withdraw() public payable onlyOwner {
         (bool success, ) = payable(msg.sender).call{value: address(this).balance}("");
-        require(success);
+        require(success, "Transfer failed");
     }
+
+    // metadata URI
+    string private _baseTokenURI;
+
+    function _baseURI() internal view virtual override returns (string memory) {
+        return _baseTokenURI;
+    }
+
 }
