@@ -33,7 +33,6 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     bool public isKycRequired = true;
     address private signer; // signer to make signature
     mapping(address => uint256) public whitelistMinted; // address => amount
-    mapping(address => bool) whitelistedAddresses;
     mapping(address => bool) blacklistedAddresses;
     address public immutable punksContract; // mainnet punks - 0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB
 
@@ -55,7 +54,6 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     event NFTiffMinted(address indexed to, uint256 indexed tokenId);
     event Claimed(uint256 claimId, address indexed to, uint256 punkId, uint256 nftiffId, uint256 timestamp);
     event UsersBlacklisted(address[] users);
-    event UsersWhitelisted(address[] users);
     event SignerChanged(address signer);
     event KycRequireChanged(bool kycRequired);
     event PublicSaleStatusChanged(bool isActive);
@@ -88,8 +86,6 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     // INTERNAL
 
     function presaleValidations(bytes memory _signature) internal view {
-        require(whitelistedAddresses[msg.sender] == true, "Not whitelisted user");
-
         if(isKycRequired) {
             bytes32 hash = keccak256(abi.encodePacked("kyc-approved", msg.sender));
             address signer_ = hash.toEthSignedMessageHash().recover(_signature);
@@ -169,10 +165,6 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
 
     function getSigner() public view returns (address) {
         return signer;
-    }
-
-    function isWhitelisted(address _user) public view returns (bool) {
-        return whitelistedAddresses[_user];
     }
 
     function isBlacklisted(address _user) public view returns (bool) {
@@ -274,13 +266,6 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     function setSigner(address signer_) public onlyOwner {
         signer = signer_;
         emit SignerChanged(signer_);
-    }
-
-    function whitelistUsers(address[] memory addresses) public onlyOwner {
-        for (uint256 i = 0; i < addresses.length; i++) {
-            whitelistedAddresses[addresses[i]] = true;
-        }
-        emit UsersWhitelisted(addresses);
     }
 
     function blacklistUsers(address[] memory addresses) public onlyOwner {

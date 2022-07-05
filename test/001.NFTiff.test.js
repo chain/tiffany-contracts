@@ -77,17 +77,6 @@ describe("NFTiff Test", function () {
     await info.nftiff.connect(info.deployerSigner).setPresaleStatus(true);
     expect(await info.nftiff.presaleActive()).to.equal(true);
 
-    // not added to whitelist
-    expect(await info.nftiff.isWhitelisted(info.member1)).to.equal(false);
-    await expect(
-        info.nftiff
-        .connect(info.member1Signer)
-        .mint1(2, signature, { value: info.mintFee(2) })
-      ).to.be.reverted;
-  
-    await info.nftiff.connect(info.deployerSigner).whitelistUsers([info.member1, info.member2]);
-    expect(await info.nftiff.isWhitelisted(info.member1)).to.equal(true);
-
     // invalid kyc signature
     await expect(
         info.nftiff
