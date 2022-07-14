@@ -33,7 +33,7 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
     bool public isKycRequired = true;
     address private signer; // signer to make signature
     mapping(address => uint256) public whitelistMinted; // address => amount
-    mapping(address => bool) blacklistedAddresses;
+    mapping(address => bool) public blacklistedAddresses;
     address public immutable punksContract; // mainnet punks - 0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB
 
     uint256 public totalClaimed;
@@ -51,6 +51,7 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
 
     /** EVENTS */
     event TokenURIUpdated(uint256 indexed tokenId, string uri);
+    event BaseURISet(string baseURI);
     event NFTiffMinted(address indexed to, uint256 indexed tokenId);
     event Claimed(uint256 claimId, address indexed to, uint256 punkId, uint256 nftiffId, uint256 timestamp);
     event UsersBlacklisted(address[] users);
@@ -204,12 +205,14 @@ contract NFTiff is ERC721Enumerable, Ownable, ReentrancyGuard {
             return string(abi.encodePacked(base, _tokenURI));
         }
 
-        return super.tokenURI(tokenId);
+        // if baseURI exists and tokenURI not set, returns ""
+        return ""; // super.tokenURI(tokenId);
     }
 
     //ONLY OWNER SETTERS
     function setBaseURI(string calldata baseURI) external onlyOwner {
         _baseTokenURI = baseURI;
+        emit BaseURISet(baseURI);
     }
 
     function setTokenURI(uint256 tokenId, string memory _tokenURI) public onlyOwner {
