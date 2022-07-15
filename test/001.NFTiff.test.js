@@ -1,4 +1,6 @@
 require("dotenv").config();
+const helpers = require("./helpers/helpers");
+
 const { expect } = require("chai");
 const { BigNumber } = require("ethers");
 const { ethers, getNamedAccounts, web3 } = require("hardhat");
@@ -65,6 +67,7 @@ describe("NFTiff Test", function () {
 
     // generate kyc signature
     const signature = await getKycSignature(info.member1);
+    const signature2 = await getKycSignature(info.member2);
 
     // presale not active
     await info.nftiff.connect(info.deployerSigner).setPresaleStatus(false);
@@ -72,17 +75,37 @@ describe("NFTiff Test", function () {
       info.nftiff
       .connect(info.member1Signer, { value: info.mintFee(2) })
       .mint1(2, signature)
-    ).to.be.reverted;
+    ).to.be.revertedWith("Sale has not started yet");
 
     await info.nftiff.connect(info.deployerSigner).setPresaleStatus(true);
     expect(await info.nftiff.presaleActive()).to.equal(true);
+    await expect(
+      info.nftiff
+      .connect(info.member1Signer, { value: info.mintFee(2) })
+      .mint1(2, signature)
+    ).to.be.revertedWith("Presale ended");
+
+    const curTimestamp = await helpers.getBlockTimestamp();
+    await info.nftiff.connect(info.deployerSigner).setPresaleEndTimestamp(curTimestamp + 86400);
+    expect(await info.nftiff.presaleEndTimestamp()).to.equal(curTimestamp + 86400);
+
+    // not whitelisted user
+    expect(await info.nftiff.whitelistedAddresses(info.member1)).to.equal(false);
+    await expect(
+      info.nftiff
+      .connect(info.member1Signer)
+      .mint1(2, signature, { value: info.mintFee(2) })
+    ).to.be.revertedWith("Not whitelisted user");
+
+    await info.nftiff.connect(info.deployerSigner).whitelistUsers([info.member1, info.member2]);
+    expect(await info.nftiff.whitelistedAddresses(info.member1)).to.equal(true);
 
     // invalid kyc signature
     await expect(
-        info.nftiff
-        .connect(info.member2Signer)
-        .mint1(2, signature, { value: info.mintFee(2) })
-      ).to.be.reverted;
+      info.nftiff
+      .connect(info.member2Signer)
+      .mint1(2, signature, { value: info.mintFee(2) })
+    ).to.be.revertedWith("Kyc not approved");
 
     // presale mint success
     await expect(
@@ -100,12 +123,12 @@ describe("NFTiff Test", function () {
 
     // blacklist mint
     await info.nftiff.connect(info.deployerSigner).blacklistUsers([info.member1]);
-    expect(await info.nftiff.isBlacklisted(info.member1)).to.equal(true);
+    expect(await info.nftiff.blacklistedAddresses(info.member1)).to.equal(true);
     await expect(
         info.nftiff
         .connect(info.member1Signer)
         .mint1(2, signature, { value: info.mintFee(2) })
-      ).to.be.reverted;
+      ).to.be.revertedWith("Blacklisted user");
 
     // token uri
     expect(await info.nftiff.tokenURI(1)).to.equal(notRevealedUri);
@@ -137,14 +160,14 @@ describe("NFTiff Test", function () {
     await expect(
         info.nftiff
         .connect(info.member2Signer)
-        .mintPublic(2, { value: info.mintFee(2) })
+        .mintPublic(2, signature2, { value: info.mintFee(2) })
       ).to.be.emit(info.nftiff, "Transfer");
     // can't mint blacklisted user
     await expect(
         info.nftiff
         .connect(info.member1Signer)
-        .mintPublic(2, { value: info.mintFee(2) })
-      ).to.be.reverted;
+        .mintPublic(2, signature, { value: info.mintFee(2) })
+      ).to.be.revertedWith("Blacklisted user");
   });
 
 
